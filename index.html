@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workload Identity &amp; Service-Mesh AuthZ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/black.min.css">
+<style>
+  :root { --amber:#f5a623; --green:#4ecb8d; --purple:#a78bfa; --blue:#60a5fa; --red:#f87171;
+          --bg:#0a0a0f; --bg2:#10101a; --bg3:#181824; --border:#2a2a3a; --text:#e8e8f0; --muted:#8888a8; }
+  .reveal-viewport { background: var(--bg); }
+  .reveal .slides section { background: transparent; }
+  .reveal { font-family: 'DM Sans', sans-serif; color: var(--text); }
+  .reveal h1, .reveal h2, .reveal h3 { font-family: 'Playfair Display', serif; font-weight: 700; }
+  .reveal h1 { font-size: 1.6em; color: var(--amber); line-height: 1.1; }
+  .reveal h2 { font-size: 1.1em; color: var(--amber); margin-bottom: .2em; }
+  .reveal h3 { font-size: .78em; color: var(--green); margin-bottom: .15em; }
+  .reveal p  { font-size: .56em; line-height: 1.45; color: var(--text); }
+  .reveal li { font-size: .54em; line-height: 1.45; margin-bottom: .1em; }
+  .reveal code { font-family: 'JetBrains Mono', monospace; font-size: .72em; }
+  .reveal pre  { box-shadow: none; background: var(--bg3); border: 1px solid var(--border);
+                 border-radius: 6px; padding: .3em .5em; margin: .25em 0; }
+  .reveal pre code { font-size: .52em; line-height: 1.35; background: transparent; color: #cdd6f4; }
+  .slide-hdr { display:flex; align-items:center; gap:.4em; border-bottom:1px solid var(--border);
+               padding-bottom:.2em; margin-bottom:.3em; }
+  .slide-hdr .tag { font-family:'JetBrains Mono',monospace; font-size:.42em; font-weight:500;
+                    color:var(--bg); background:var(--amber); padding:.1em .4em; border-radius:3px; letter-spacing:.04em; }
+  .slide-hdr h2 { margin:0; font-size:.95em; }
+  .cols { display:grid; gap:.5em; }
+  .cols-2 { grid-template-columns:1fr 1fr; }
+  .cols-3 { grid-template-columns:1fr 1fr 1fr; }
+  .cols-6040 { grid-template-columns:6fr 4fr; }
+  .cols-4060 { grid-template-columns:4fr 6fr; }
+  .card { background:var(--bg2); border:1px solid var(--border); border-radius:6px; padding:.35em .6em; }
+  .card.amber { border-left:3px solid var(--amber); }
+  .card.green { border-left:3px solid var(--green); }
+  .card.purple{ border-left:3px solid var(--purple); }
+  .card.blue  { border-left:3px solid var(--blue); }
+  .card.red   { border-left:3px solid var(--red); }
+  .card h3 { font-size:.64em; margin:0 0 .12em; }
+  .card p  { font-size:.52em; margin:0; color:#b8b8d0; }
+  .card ul { margin:0; padding-left:1em; }
+  .card li { font-size:.52em; color:#b8b8d0; margin-bottom:.02em; }
+  .reveal table { width:100%; border-collapse:collapse; font-size:.5em; }
+  .reveal table th { background:var(--bg3); color:var(--amber); font-weight:600; padding:.2em .4em; border:1px solid var(--border); text-align:left; }
+  .reveal table td { padding:.18em .4em; border:1px solid var(--border); color:#ccc; }
+  .reveal table tr:nth-child(even) td { background:#0e0e18; }
+  .a{color:var(--amber);font-weight:600;} .g{color:var(--green);font-weight:600;}
+  .p{color:var(--purple);font-weight:600;} .b{color:var(--blue);font-weight:600;}
+  .r{color:var(--red);font-weight:600;} .mono{font-family:'JetBrains Mono',monospace;}
+  svg.diagram { display:block; margin:0 auto; overflow:visible; }
+  .pill { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:.44em; padding:.08em .4em; border-radius:99px; border:1px solid; margin:0 .08em; }
+  .pill.amber{color:var(--amber); border-color:var(--amber);} .pill.green{color:var(--green); border-color:var(--green);}
+  .pill.purple{color:var(--purple); border-color:var(--purple);} .pill.blue{color:var(--blue); border-color:var(--blue);}
+  .reveal .slide-footer{display:none;}
+  .title-slide h1{font-size:1.8em;}
+  .title-slide .subtitle{font-size:.7em; color:var(--green); font-family:'DM Sans',sans-serif; font-weight:300; letter-spacing:.04em; margin:.3em 0 .6em;}
+  .title-slide .meta{font-size:.48em; color:var(--muted); font-family:'JetBrains Mono',monospace;}
+  .ss-row{display:flex; gap:.25em; align-items:center; margin:.1em 0; font-size:.55em; font-family:'JetBrains Mono',monospace;}
+  .ss-node{padding:.2em .55em; border-radius:5px; font-size:.9em; background:var(--bg3); border:1px solid var(--border); color:var(--text);}
+  .ss-node.active{background:#1a2a1a; border-color:var(--green); color:var(--green);}
+  .ss-node.done{background:#1a1a2a; border-color:var(--purple); color:var(--purple);}
+  .ss-arrow{color:var(--amber);}
+  .reveal ul, .reveal ol { margin:.15em 0 .15em 1em; }
+  .reveal .slides > section { display:flex !important; flex-direction:column !important; overflow-y:auto !important; align-items:stretch !important; justify-content:flex-start !important; }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+
+<!-- ═══ SLIDE 01 — TITLE ═══ -->
+<section class="title-slide" data-background-color="#0a0a0f">
+  <div style="text-align:left; max-width:820px; margin:0 auto; padding:1em 0;">
+    <div style="font-family:'JetBrains Mono',monospace; font-size:.5em; color:var(--muted); margin-bottom:.4em; letter-spacing:.1em;">
+      TECHNICAL PRESENTATION
+    </div>
+    <h1>Workload Identity<br>&amp; Service-Mesh AuthZ</h1>
+    <div class="subtitle">SPIFFE/SPIRE &middot; Istio &middot; Linkerd &middot; Cilium &middot; Cloud-native federation</div>
+    <div style="width:60px; height:3px; background:var(--amber); margin-bottom:1.4em;"></div>
+    <div style="display:flex; gap:1.2em; flex-wrap:wrap; margin-bottom:1em;">
+      <span class="pill amber">SPIFFE</span>
+      <span class="pill green">mTLS</span>
+      <span class="pill purple">Istio AuthZPolicy</span>
+      <span class="pill blue">IRSA / WI / WIF</span>
+    </div>
+    <div class="ss-row" style="margin-top:0.6em;">
+      <span class="ss-node active">attest</span>
+      <span class="ss-arrow">→</span>
+      <span class="ss-node active">issue SVID</span>
+      <span class="ss-arrow">→</span>
+      <span class="ss-node active">mTLS handshake</span>
+      <span class="ss-arrow">→</span>
+      <span class="ss-node done">policy decision</span>
+    </div>
+    <p style="max-width:660px; color:#a0a0c0; font-size:.56em; line-height:1.5; margin-top:1em;">
+      How services prove who they are to other services — without shared secrets, without long-lived keys, and without an operator in the loop.
+    </p>
+    <div class="meta" style="margin-top:1.4em;">
+      Attest &nbsp;·&nbsp; Issue &nbsp;·&nbsp; Verify &nbsp;·&nbsp; Authorise
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ SLIDE 02 — TOPICS ═══ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">01</span><h2>Topics</h2></div>
+  <div class="cols cols-2">
+    <div>
+      <div class="card amber">
+        <h3 class="a">The workload-identity problem</h3>
+        <ul>
+          <li>Why service-to-service is fundamentally different from user-to-service</li>
+          <li>The crisis of long-lived API keys</li>
+          <li>What "identity" means for a process / pod / Lambda</li>
+        </ul>
+      </div>
+      <div class="card green" style="margin-top:0.5em;">
+        <h3 class="g">SPIFFE &amp; SPIRE</h3>
+        <ul>
+          <li>SPIFFE ID and the SVID — X.509 and JWT flavours</li>
+          <li>Workload attestation — how SPIRE knows what you are</li>
+          <li>Federation — SPIFFE bundles across trust domains</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">Service mesh AuthZ</h3>
+        <ul>
+          <li>Mesh primer — what it gives you for AuthZ</li>
+          <li>Istio AuthorizationPolicy — patterns &amp; pitfalls</li>
+          <li>Linkerd authorisation</li>
+          <li>Cilium L4/L7 + Tetragon</li>
+          <li>mTLS rotation at scale</li>
+          <li>Mesh + JWT (Envoy OIDC at L7)</li>
+        </ul>
+      </div>
+      <div class="card blue" style="margin-top:0.5em;">
+        <h3 class="b">Cloud-native &amp; operational</h3>
+        <ul>
+          <li>IRSA, GCP Workload Identity, Azure WI, WIF</li>
+          <li>K8s ServiceAccountTokenVolume</li>
+          <li>Workload identity for AI agents / MCP</li>
+          <li>Choosing a stack &middot; migration patterns &middot; gotchas</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ SLIDE 03 — THE PROBLEM ═══ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">02</span><h2>The Workload-Identity Problem</h2></div>
+  <p>Every modern system has a sea of services calling other services. They authenticate to each other using secrets — tokens, API keys, certificates. <span class="r">Where do those secrets come from, where are they stored, and what happens when one leaks?</span></p>
+
+  <div class="cols cols-2" style="margin-top:0.4em;">
+    <div>
+      <div class="card red">
+        <h3 class="r">The "shared secret in a config file" era</h3>
+        <ul>
+          <li>API keys committed to git, copy-pasted between Slack channels.</li>
+          <li>"Service account" passwords typed once at install and never rotated.</li>
+          <li>Static AWS access keys baked into AMIs.</li>
+          <li>Every breach post-mortem: <em>"The credential had been valid for ~ years."</em></li>
+        </ul>
+      </div>
+      <div class="card amber" style="margin-top:0.4em;">
+        <h3 class="a">The user-AuthN solution doesn't translate</h3>
+        <ul>
+          <li>OAuth assumes a human in the loop to consent.</li>
+          <li>Passwords / passkeys assume a person with a device.</li>
+          <li>Services have <em>none</em> of those — they boot, attempt a connection, and need to prove themselves immediately.</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card green">
+        <h3 class="g">What a workload-identity system gives you</h3>
+        <ul>
+          <li><span class="a">Cryptographic identity</span> bound to <em>what</em> the workload is, not <em>where</em> a secret was placed.</li>
+          <li><span class="a">Short-lived</span> credentials — minutes, not years.</li>
+          <li><span class="a">Automatic rotation</span> with no application-side change.</li>
+          <li><span class="a">Verifiable</span> — the receiver can check the identity against a trust anchor without reaching out to a human.</li>
+          <li><span class="a">Universal</span> — same identity model across containers, VMs, serverless, on-prem, multi-cloud.</li>
+        </ul>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">Two camps of solutions</h3>
+        <ul>
+          <li><span class="g">Cloud-native</span> — IRSA, GCP Workload Identity, Azure Workload Identity, Workload Identity Federation. Tied to the cloud's identity service.</li>
+          <li><span class="g">Standards-based</span> — SPIFFE/SPIRE — vendor-neutral, multi-cloud, on-prem.</li>
+          <li>Most production stacks combine both: SPIRE issues SPIFFE IDs; SPIRE federates to AWS/GCP via OIDC.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ SLIDE 04 — SPIFFE ═══ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">03</span><h2>SPIFFE — The Specification</h2></div>
+  <p><span class="a">SPIFFE</span> = Secure Production Identity Framework For Everyone. CNCF graduated 2022. A specification, not a product. Defines <em>what</em> a workload identity looks like.</p>
+
+  <div class="cols cols-2" style="margin-top:0.4em;">
+    <div>
+      <div class="card amber">
+        <h3 class="a">SPIFFE ID — the identifier</h3>
+<pre><code>spiffe://acme.com/billing/payments-svc
+
+      └── trust domain ──┘└── workload path ──┘</code></pre>
+        <ul>
+          <li>URI format. The trust domain is your organisational boundary; the path identifies the workload.</li>
+          <li>Path is yours to design — by team / service / environment / pod.</li>
+          <li>Two workloads with the same SPIFFE ID are considered the same identity.</li>
+        </ul>
+      </div>
+      <div class="card green" style="margin-top:0.4em;">
+        <h3 class="g">SVID — SPIFFE Verifiable Identity Document</h3>
+        <ul>
+          <li>The cryptographic credential a workload presents.</li>
+          <li>Two flavours: <span class="a">X.509 SVID</span> (a cert) and <span class="a">JWT SVID</span> (a JWT).</li>
+          <li>Short-lived — typically 5 minutes to 1 hour.</li>
+          <li>Always tied back to a SPIFFE ID via <code>SAN: URI:spiffe://...</code> (X.509) or <code>sub</code> (JWT).</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">An X.509 SVID, decoded</h3>
+<pre><code>Certificate:
+  Subject: O=SPIRE
+  X509v3 Subject Alternative Name:
+    URI:spiffe://acme.com/billing/payments-svc
+  Validity:
+    Not Before: 2026-05-06T09:00:00Z
+    Not After:  2026-05-06T10:00:00Z
+  Public Key: ECDSA P-256 …
+  Signed by: spiffe://acme.com (intermediate CA)</code></pre>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">A JWT SVID, decoded</h3>
+<pre><code>{
+  "iss": "spiffe://acme.com",
+  "sub": "spiffe://acme.com/billing/payments-svc",
+  "aud": ["spiffe://acme.com/billing/ledger-svc"],
+  "exp": 1800003600,
+  "iat": 1800000000
+}</code></pre>
+        <p style="margin-top:.25em;">JWT SVIDs are sender-constrained by audience — payments can only call ledger if the SVID was minted with that <code>aud</code>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ SLIDE 05 — SPIRE ═══ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">04</span><h2>SPIRE — The Reference Implementation</h2></div>
+  <p><span class="a">SPIRE</span> = SPIFFE Runtime Environment. Two components: a server and an agent on every node. Together they issue SVIDs to workloads after attesting them.</p>
+
+  <svg class="diagram" viewBox="0 0 940 320" width="900" height="320">
+    <rect x="20"  y="20" width="180" height="50" rx="8" fill="#1a1a2a" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="110" y="42" text-anchor="middle" fill="#a78bfa" font-family="Playfair Display,serif" font-size="14" font-weight="700">SPIRE Server</text>
+    <text x="110" y="60" text-anchor="middle" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="9">central · holds CA &amp; policies</text>
+
+    <rect x="20"  y="120" width="180" height="50" rx="8" fill="#1a1a2a" stroke="#60a5fa" stroke-width="1.5"/>
+    <text x="110" y="142" text-anchor="middle" fill="#60a5fa" font-family="Playfair Display,serif" font-size="14" font-weight="700">SPIRE Agent</text>
+    <text x="110" y="160" text-anchor="middle" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="9">one per node</text>
+
+    <rect x="20"  y="220" width="180" height="50" rx="8" fill="#1a1a2a" stroke="#4ecb8d" stroke-width="1.5"/>
+    <text x="110" y="242" text-anchor="middle" fill="#4ecb8d" font-family="Playfair Display,serif" font-size="14" font-weight="700">Workload</text>
+    <text x="110" y="260" text-anchor="middle" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="9">Pod / Lambda / VM process</text>
+
+    <line x1="110" y1="170" x2="110" y2="220" stroke="#888" stroke-width="1.2"/>
+    <text x="120" y="200" fill="#888" font-family="JetBrains Mono,monospace" font-size="9">Workload API (UDS)</text>
+
+    <line x1="110" y1="70" x2="110" y2="120" stroke="#888" stroke-width="1.2"/>
+    <text x="120" y="100" fill="#888" font-family="JetBrains Mono,monospace" font-size="9">node attestation</text>
+
+    <rect x="320" y="60" width="600" height="50" rx="6" fill="#1a1a2a" stroke="#f5a623"/>
+    <text x="620" y="82" text-anchor="middle" fill="#f5a623" font-family="JetBrains Mono,monospace" font-size="10">1. Agent attests itself to Server (k8s_psat / aws_iid / azure_msi / sshpop / x509pop)</text>
+    <text x="620" y="98" text-anchor="middle" fill="#888" font-family="JetBrains Mono,monospace" font-size="9">→ Agent is now trusted by the Server, gets a node-level identity</text>
+
+    <rect x="320" y="135" width="600" height="50" rx="6" fill="#1a1a2a" stroke="#f5a623"/>
+    <text x="620" y="157" text-anchor="middle" fill="#f5a623" font-family="JetBrains Mono,monospace" font-size="10">2. Workload connects to local Agent over Unix Domain Socket</text>
+    <text x="620" y="173" text-anchor="middle" fill="#888" font-family="JetBrains Mono,monospace" font-size="9">→ Agent inspects PID, k8s namespace+SA, container image hash, etc. (workload attestation)</text>
+
+    <rect x="320" y="210" width="600" height="50" rx="6" fill="#1a1a2a" stroke="#f5a623"/>
+    <text x="620" y="232" text-anchor="middle" fill="#f5a623" font-family="JetBrains Mono,monospace" font-size="10">3. Agent matches selectors to a registration entry, asks Server for an SVID</text>
+    <text x="620" y="248" text-anchor="middle" fill="#888" font-family="JetBrains Mono,monospace" font-size="9">→ Server signs SVID with the trust-domain CA, returns to Agent</text>
+
+    <rect x="320" y="280" width="600" height="35" rx="6" fill="#1a1a2a" stroke="#4ecb8d"/>
+    <text x="620" y="302" text-anchor="middle" fill="#4ecb8d" font-family="JetBrains Mono,monospace" font-size="10">4. Agent hands the SVID to the workload (and rotates it before expiry)</text>
+  </svg>
+
+  <div class="card amber" style="margin-top:0.2em;">
+    <h3 class="a">Key property — no secrets in app code</h3>
+    <p>The workload has no shared key with the Server. The Agent's attestation chain proves the workload is legitimate; the SVID falls out as a by-product. App code calls the Workload API and receives a fresh SVID — no enrolment ceremony, no admin step.</p>
+  </div>
+</section>
+
+
+<!-- ═══ SLIDE 06 — ATTESTATION ═══ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">05</span><h2>Workload Attestation — How SPIRE Knows What You Are</h2></div>
+  <p>The attestation chain is the heart of SPIRE. The Agent and Server verify the workload's identity against the substrate it runs on, not against a credential the workload presents.</p>
+
+  <div class="cols cols-2" style="margin-top:0.4em;">
+    <div>
+      <div class="card amber">
+        <h3 class="a">Node attestation plugins</h3>
+        <ul>
+          <li><code>k8s_psat</code> — Kubernetes projected service account token, validated against the cluster's OIDC issuer.</li>
+          <li><code>aws_iid</code> — AWS instance identity document signed by EC2.</li>
+          <li><code>aws_iam</code> — STS GetCallerIdentity proves the EC2 role.</li>
+          <li><code>gcp_iit</code> / <code>azure_msi</code> — equivalents.</li>
+          <li><code>x509pop</code> / <code>sshpop</code> — proof-of-possession of pre-issued credentials.</li>
+          <li><code>tpm</code> — TPM EK/AK chains for bare metal.</li>
+        </ul>
+      </div>
+      <div class="card green" style="margin-top:0.4em;">
+        <h3 class="g">Workload attestation plugins</h3>
+        <ul>
+          <li><span class="a">k8s</span> — namespace, service account, pod label, container image SHA.</li>
+          <li><span class="a">unix</span> — UID, GID, parent process binary path + checksum.</li>
+          <li><span class="a">docker</span> — container labels, image digest.</li>
+          <li><span class="a">systemd</span> — cgroup name, unit name.</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">A registration entry — the policy</h3>
+<pre><code>spire-server entry create \
+  -spiffeID  spiffe://acme.com/billing/payments-svc \
+  -parentID  spiffe://acme.com/spire/agent/k8s_psat/cluster/abc \
+  -selector  k8s:ns:billing \
+  -selector  k8s:sa:payments-svc \
+  -selector  k8s:container-image-sha:sha256:e1b7… \
+  -ttl       300</code></pre>
+        <p style="margin-top:.25em;">The agent only mints this SPIFFE ID for a workload that <em>matches every selector</em>. Wrong namespace, wrong SA, wrong image hash → no SVID.</p>
+      </div>
+      <div class="card red" style="margin-top:0.4em;">
+        <h3 class="r">The selector trap</h3>
+        <p>Loose selectors give every Pod in a namespace the same identity. Tight selectors (image SHA) break on every deploy. Sweet spot: namespace + service account + image <em>tag</em> with admission policy enforcing valid image registries.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ SLIDE 07 — FEDERATION ═══ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">06</span><h2>SPIFFE Federation — Across Trust Domains</h2></div>
+
+  <div class="cols cols-2">
+    <div>
+      <div class="card amber">
+        <h3 class="a">The problem</h3>
+        <ul>
+          <li>You have <code>spiffe://acme.com</code> for production.</li>
+          <li>Your acquired company runs <code>spiffe://oldco.com</code>.</li>
+          <li>A service in acme needs to call a service in oldco.</li>
+          <li>Each trust domain has its own CA. Neither side trusts the other by default.</li>
+        </ul>
+      </div>
+      <div class="card green" style="margin-top:0.4em;">
+        <h3 class="g">The mechanism — Trust Bundles</h3>
+        <ul>
+          <li>Each SPIRE Server publishes a <em>trust bundle</em>: the public keys / CA certs of the trust domain.</li>
+          <li>Federation = exchanging trust bundles, statically or via the SPIFFE Federation API.</li>
+          <li>Once trust-bundles are exchanged, an X.509 SVID from <code>oldco</code> validates against acme's view, and vice versa.</li>
+          <li>Authorisation policy still has the final say — federation says "I trust the issuer", not "I trust this caller".</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">The Federation API</h3>
+<pre><code># SPIRE servers exchange bundles via HTTPS
+GET /federation/spiffe/v1/bundle
+
+# response is a SPIFFE Trust Domain bundle (JWK Set + X.509)
+{
+  "spiffe_sequence": 1234,
+  "spiffe_refresh_hint": 60,
+  "keys": [
+    { "kty": "EC", "use": "x509-svid", "x5c": ["MIIB…"] },
+    { "kty": "EC", "use": "jwt-svid",  "kid":  "abc1", "crv": "P-256", "x":"…", "y":"…" }
+  ]
+}</code></pre>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">Use cases for federation</h3>
+        <ul>
+          <li>Multi-cloud (one SPIRE per cloud, federated for cross-cloud calls).</li>
+          <li>Multi-cluster Kubernetes — one trust domain per cluster.</li>
+          <li>Federation with cloud-native identity (AWS as a federated trust source via OIDC).</li>
+          <li>B2B service-to-service across organisations.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ SLIDE 08 — MESH PRIMER ═══ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">07</span><h2>Service Mesh — What It Buys You for AuthZ</h2></div>
+  <p>A service mesh injects a sidecar (or, in newer architectures, an ambient agent) into every pod's network path. That sidecar terminates and originates connections, which means it can do <span class="a">three things app code traditionally had to</span>: identity, encryption, policy.</p>
+
+  <svg class="diagram" viewBox="0 0 940 240" width="900" height="240">
+    <rect x="20"  y="60" width="220" height="120" rx="8" fill="#10101a" stroke="#60a5fa" stroke-width="2"/>
+    <text x="130" y="84" text-anchor="middle" fill="#60a5fa" font-family="Playfair Display,serif" font-size="14" font-weight="700">Pod A</text>
+    <rect x="40"  y="100" width="80" height="30" rx="4" fill="#1a1a2a" stroke="#4ecb8d"/>
+    <text x="80"  y="120" text-anchor="middle" fill="#4ecb8d" font-family="JetBrains Mono,monospace" font-size="10">app</text>
+    <rect x="140" y="100" width="80" height="30" rx="4" fill="#1a1a2a" stroke="#a78bfa"/>
+    <text x="180" y="120" text-anchor="middle" fill="#a78bfa" font-family="JetBrains Mono,monospace" font-size="10">sidecar</text>
+    <line x1="120" y1="115" x2="140" y2="115" stroke="#888"/>
+    <text x="130" y="160" text-anchor="middle" fill="#888" font-family="JetBrains Mono,monospace" font-size="9">localhost</text>
+
+    <rect x="700" y="60" width="220" height="120" rx="8" fill="#10101a" stroke="#60a5fa" stroke-width="2"/>
+    <text x="810" y="84" text-anchor="middle" fill="#60a5fa" font-family="Playfair Display,serif" font-size="14" font-weight="700">Pod B</text>
+    <rect x="720" y="100" width="80" height="30" rx="4" fill="#1a1a2a" stroke="#a78bfa"/>
+    <text x="760" y="120" text-anchor="middle" fill="#a78bfa" font-family="JetBrains Mono,monospace" font-size="10">sidecar</text>
+    <rect x="820" y="100" width="80" height="30" rx="4" fill="#1a1a2a" stroke="#4ecb8d"/>
+    <text x="860" y="120" text-anchor="middle" fill="#4ecb8d" font-family="JetBrains Mono,monospace" font-size="10">app</text>
+    <line x1="800" y1="115" x2="820" y2="115" stroke="#888"/>
+
+    <line x1="220" y1="115" x2="720" y2="115" stroke="#f5a623" stroke-width="2" marker-end="url(#mesh-arr)"/>
+    <text x="470" y="105" text-anchor="middle" fill="#f5a623" font-family="JetBrains Mono,monospace" font-size="11" font-weight="600">mTLS — SPIFFE-ID-bearing certs both ways</text>
+    <text x="470" y="135" text-anchor="middle" fill="#888" font-family="JetBrains Mono,monospace" font-size="9">policy decision: AuthorizationPolicy / NetworkPolicy / EndpointPolicy</text>
+
+    <text x="465" y="220" text-anchor="middle" fill="#888" font-family="DM Sans,sans-serif" font-size="11">App code sees plain HTTP to localhost. Sidecar handles identity + crypto + policy. <em>App code didn't change.</em></text>
+
+    <defs><marker id="mesh-arr" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto"><path d="M0,0 L9,3.5 L0,7" fill="#f5a623"/></marker></defs>
+  </svg>
+
+  <div class="cols cols-3" style="margin-top:0.2em;">
+    <div class="card amber"><h3 class="a">Identity</h3><p>Sidecar holds the workload's SVID / cert. Other pod sees the verified identity, not an IP.</p></div>
+    <div class="card green"><h3 class="g">Encryption</h3><p>mTLS for free, between every pair of pods. Rotated by the mesh, not the app.</p></div>
+    <div class="card purple"><h3 class="p">Policy</h3><p>Policies expressed as Kubernetes CRDs, applied at the sidecar — outside the app.</p></div>
+  </div>
+</section>
+
+
+<!-- ═══ SLIDE 09 — ISTIO ═══ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">08</span><h2>Istio AuthorizationPolicy — Patterns &amp; Pitfalls</h2></div>
+  <p>Istio's <code>AuthorizationPolicy</code> CRD is evaluated by the Envoy sidecar (or ztunnel in ambient mode). It supports L4 and L7 rules.</p>
+
+  <div class="cols cols-2" style="margin-top:0.4em;">
+    <div>
+      <div class="card amber">
+        <h3 class="a">A typical L7 rule</h3>
+<pre><code>apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata: { name: ledger-allow-payments, namespace: billing }
+spec:
+  selector:
+    matchLabels: { app: ledger-svc }
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/billing/sa/payments-svc"]
+      to:
+        - operation:
+            methods: ["GET","POST"]
+            paths:   ["/v1/postings/*"]
+      when:
+        - key:    request.auth.claims[scope]
+          values: ["postings:write"]
+        - key:    request.headers[x-tenant-id]
+          notValues: [""]</code></pre>
+      </div>
+    </div>
+    <div>
+      <div class="card green">
+        <h3 class="g">The four important things</h3>
+        <ul>
+          <li><span class="a">action</span> — <code>ALLOW</code>, <code>DENY</code>, <code>AUDIT</code>, or <code>CUSTOM</code> (delegate to ext_authz).</li>
+          <li><span class="a">selector</span> — which workloads this policy attaches to. Empty = whole namespace.</li>
+          <li><span class="a">rules.from.source.principals</span> — <em>SPIFFE-style identities</em> (<code>cluster.local/ns/X/sa/Y</code>) of allowed callers.</li>
+          <li><span class="a">when</span> — predicates on JWT claims, headers, source IP, request properties.</li>
+        </ul>
+      </div>
+      <div class="card red" style="margin-top:0.4em;">
+        <h3 class="r">Pitfalls in production</h3>
+        <ul>
+          <li><span class="r">Default-allow</span> — without an explicit DENY-all + ALLOW catalogue, anything in the mesh can call anything. Start with a namespace-wide DENY-all and whitelist.</li>
+          <li><span class="r">Authn vs authz mix-up</span> — an AuthorizationPolicy without a paired <code>RequestAuthentication</code> evaluates JWT claims against an unverified token.</li>
+          <li><span class="r">Action precedence</span> — DENY wins over ALLOW; CUSTOM (ext_authz) runs first. Get the order wrong and policies silently no-op.</li>
+          <li><span class="r">Selectors that match too much</span> — a label collision can extend a payments policy to a non-payments service.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ SLIDE 10 — LINKERD ═══ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">09</span><h2>Linkerd — Server, ServerAuthorization &amp; HTTPRoute</h2></div>
+  <p>Linkerd's authorisation model is intentionally smaller than Istio's — fewer CRDs, simpler defaults, gateway-API-aligned.</p>
+
+  <div class="cols cols-2" style="margin-top:0.4em;">
+    <div>
+      <div class="card amber">
+        <h3 class="a">The three CRDs</h3>
+<pre><code># 1. Server — selects ports on workloads to protect
+apiVersion: policy.linkerd.io/v1beta3
+kind: Server
+metadata: { name: ledger, namespace: billing }
+spec:
+  podSelector:
+    matchLabels: { app: ledger-svc }
+  port: 8080
+  proxyProtocol: HTTP/2
+
+---
+# 2. AuthorizationPolicy — bind a target to a Required* auth
+apiVersion: policy.linkerd.io/v1alpha1
+kind: AuthorizationPolicy
+metadata: { name: ledger-from-payments, namespace: billing }
+spec:
+  targetRef:
+    group: policy.linkerd.io
+    kind: Server
+    name: ledger
+  requiredAuthenticationRefs:
+    - { group: policy.linkerd.io, kind: MeshTLSAuthentication,
+        name: payments-svc-id }
+
+---
+# 3. MeshTLSAuthentication — who is allowed
+apiVersion: policy.linkerd.io/v1alpha1
+kind: MeshTLSAuthentication
+metadata: { name: payments-svc-id, namespace: billing }
+spec:
+  identities:
+    - "payments-svc.billing.serviceaccount.identity.linkerd.cluster.local"</code></pre>
+      </div>
+    </div>
+    <div>
+      <div class="card green">
+        <h3 class="g">Why split into three?</h3>
+        <ul>
+          <li><span class="a">Server</span> declares the target — scoped per-port for fine control.</li>
+          <li><span class="a">AuthorizationPolicy</span> binds a target to a list of required auth methods.</li>
+          <li><span class="a">MeshTLSAuthentication</span> / <span class="a">NetworkAuthentication</span> / <span class="a">HTTPLocalRateLimitPolicy</span> are the auth-method primitives.</li>
+          <li>Composing them lets you say "<em>port 8080 of ledger requires either an mTLS identity from list X <strong>or</strong> a JWT with claim Y</em>".</li>
+        </ul>
+      </div>
+      <div class="card purple" style="margin-top:0.4em;">
+        <h3 class="p">Default deny</h3>
+        <p>Linkerd 2.12+ defaults to <em>"ports without a Server are open; ports with a Server require an explicit policy"</em>. Add a Server and you've turned on the lock.</p>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">Linkerd vs Istio</h3>
+        <p>Linkerd is lighter and more opinionated; Istio more powerful and more complex. For most teams the rule of thumb is: Linkerd unless you specifically need Istio's L7 features (custom Envoy filters, <code>EnvoyFilter</code> CRD, Wasm extensions, fine-grained traffic shaping).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ SLIDE 11 — CILIUM ═══ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">10</span><h2>Cilium — eBPF-Native L4/L7 + Tetragon</h2></div>
+
+  <div class="cols cols-2">
+    <div>
+      <div class="card amber">
+        <h3 class="a">Cilium in two sentences</h3>
+        <p>An <span class="a">eBPF</span>-based CNI for Kubernetes. Network policy, observability, encryption and L7 inspection are enforced by eBPF programs in the kernel — no per-pod sidecar, often lower overhead.</p>
+      </div>
+      <div class="card green" style="margin-top:0.4em;">
+        <h3 class="g">CiliumNetworkPolicy at L7</h3>
+<pre><code>apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata: { name: payments-to-ledger, namespace: billing }
+spec:
+  endpointSelector:
+    matchLabels: { app: ledger-svc }
+  ingress:
+    - fromEndpoints:
+        - matchLabels: { app: payments-svc }
+      toPorts:
+        - ports: [{ port: "8080", protocol: TCP }]
+          rules:
+            http:
+              - method: "GET"
+                path:   "/v1/postings/.*"
+              - method: "POST"
+                path:   "/v1/postings"</code></pre>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">Where Cilium shines</h3>
+        <ul>
+          <li>Sidecar-free meshes — Cilium's <span class="g">"Service Mesh"</span> mode (and the broader <span class="g">ambient mesh</span> wave) puts policy/encryption in the host kernel.</li>
+          <li>Kernel-level observability — <span class="g">Hubble</span> shows L3-L7 traffic with identity attached.</li>
+          <li>Identity-aware NetworkPolicy — pods are identified by labels, not IPs.</li>
+          <li>WireGuard or mTLS encryption between nodes.</li>
+        </ul>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">Tetragon — runtime security</h3>
+        <ul>
+          <li>Sister project to Cilium. eBPF-based runtime visibility: every <code>execve</code>, <code>connect</code>, file open.</li>
+          <li>Policies can <em>kill</em> a process in-kernel on detection.</li>
+          <li>Less an "AuthZ" tool, more a "post-AuthZ enforcement on what the workload actually does" tool.</li>
+        </ul>
+      </div>
+      <div class="card red" style="margin-top:0.4em;">
+        <h3 class="r">Watch out</h3>
+        <p>Cilium's L7 inspection only works for protocols it understands (HTTP/1.1, HTTP/2, gRPC, Kafka, DNS). For anything custom you're back to L4 + a service mesh sidecar.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ SLIDE 12 — MTLS AT SCALE ═══ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">11</span><h2>mTLS at Scale — Issuance, Rotation, Observability</h2></div>
+
+  <div class="cols cols-2">
+    <div>
+      <div class="card amber">
+        <h3 class="a">The bits that hurt</h3>
+        <ul>
+          <li><span class="g">Issuance</span> — every workload needs a fresh cert when it boots, ideally without ever holding a long-lived CA key.</li>
+          <li><span class="g">Rotation</span> — short-lived certs (5–60 min) re-rolled before expiry, automatically.</li>
+          <li><span class="g">Trust bundle distribution</span> — every verifier needs the latest CA bundle even as you rotate roots.</li>
+          <li><span class="g">CA root rotation</span> itself — rare but required, and many setups never rehearse it.</li>
+        </ul>
+      </div>
+      <div class="card green" style="margin-top:0.4em;">
+        <h3 class="g">Who issues, in practice</h3>
+        <table>
+          <thead><tr><th>System</th><th>Who issues</th></tr></thead>
+          <tbody>
+            <tr><td>Istio (in-mesh)</td><td>Istiod / cert-manager+istio-csr / SPIRE federated</td></tr>
+            <tr><td>Linkerd</td><td>Linkerd's own identity component / cert-manager</td></tr>
+            <tr><td>Cilium service mesh</td><td>Cilium agent, optionally with cert-manager</td></tr>
+            <tr><td>SPIRE-issued mesh</td><td>SPIRE Server</td></tr>
+            <tr><td>Cloud-managed (App Mesh, Service Mesh)</td><td>Cloud's CA service</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">cert-manager + Trust Manager</h3>
+        <ul>
+          <li>Kubernetes-native CA / certificate operator.</li>
+          <li><code>Issuer</code> / <code>ClusterIssuer</code> CRDs for ACME, Vault, AWS PCA, SPIFFE.</li>
+          <li><span class="a">Trust Manager</span> distributes CA bundles into ConfigMaps so meshes / proxies pick them up automatically.</li>
+        </ul>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">Things to monitor</h3>
+        <ul>
+          <li>Cert expiry distribution per workload (alert when &lt; 50 % of intended TTL).</li>
+          <li>Re-issuance failure rate — your first signal that the CA / issuer is broken.</li>
+          <li>Mismatched trust bundles between regions / clusters.</li>
+          <li>mTLS handshake failure rate at the sidecar / gateway.</li>
+        </ul>
+      </div>
+      <div class="card red" style="margin-top:0.4em;">
+        <h3 class="r">CA root rotation</h3>
+        <p>Rehearse it before you need it. Pre-distribute the new root for ≥ 1 cert TTL before switching issuance, then keep the old root in trust bundles for ≥ 1 cert TTL after.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ SLIDE 13 — CLOUD WORKLOAD ID ═══ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">12</span><h2>Cloud-Native Workload Identity</h2></div>
+  <p>Each cloud has its own implementation of "this pod / VM / function is allowed to call our APIs". They all converge on the same shape — bind a workload identity to an IAM role, mint short-lived credentials on demand.</p>
+
+  <table>
+    <thead><tr><th>Cloud</th><th>Mechanism</th><th>How it binds</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="a">AWS</span> — IRSA (IAM Roles for Service Accounts)</td>
+        <td>EKS pod's projected SA token has <code>aud=sts.amazonaws.com</code></td>
+        <td>STS trusts the cluster's OIDC issuer; pod calls <code>AssumeRoleWithWebIdentity</code> using the SA token.</td>
+      </tr>
+      <tr>
+        <td><span class="a">AWS</span> — EKS Pod Identity</td>
+        <td>Newer alternative; agent on every node</td>
+        <td>Agent intermediates; pod calls a local IMDSv2-like endpoint.</td>
+      </tr>
+      <tr>
+        <td><span class="a">GCP</span> — Workload Identity</td>
+        <td>Bind GCP service account to K8s service account</td>
+        <td>GKE metadata server intermediates; pod gets GCP creds via metadata calls.</td>
+      </tr>
+      <tr>
+        <td><span class="a">GCP</span> — Workload Identity Federation</td>
+        <td>Outside-GCP workloads (other clouds, GitHub Actions)</td>
+        <td>External OIDC IdP → STS-style token exchange → short-lived GCP creds.</td>
+      </tr>
+      <tr>
+        <td><span class="a">Azure</span> — Workload Identity</td>
+        <td>K8s SA federated with Entra app registration</td>
+        <td>SA token is exchanged via OIDC for an Entra access token.</td>
+      </tr>
+      <tr>
+        <td><span class="a">Azure</span> — Managed Identity</td>
+        <td>VMs / Container Apps / Functions</td>
+        <td>Local IMDS endpoint at <code>169.254.169.254</code> mints tokens for the assigned identity.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="cols cols-2" style="margin-top:0.4em;">
+    <div class="card amber">
+      <h3 class="a">The common shape</h3>
+      <p>An OIDC token signed by the workload-substrate (cluster, cloud) is exchanged for short-lived API credentials at the cloud's STS. <span class="g">No long-lived secret, no shared key, no manual rotation.</span></p>
+    </div>
+    <div class="card green">
+      <h3 class="g">Where it differs from SPIFFE</h3>
+      <p>Cloud workload identity authenticates the workload <em>to the cloud's APIs</em>. SPIFFE authenticates workloads <em>to each other</em>. They compose: the SPIRE server can attest using IRSA, and SPIFFE workloads can federate to AWS via WIF.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ SLIDE 14 — K8S SAT ═══ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">13</span><h2>K8s ServiceAccountTokenVolumeProjection</h2></div>
+  <p>The Kubernetes-native way to get a short-lived OIDC-style token into a pod. The substrate everything cloud-native workload identity (IRSA, GCP WI, Azure WI) and SPIRE k8s_psat builds on.</p>
+
+  <div class="cols cols-2" style="margin-top:0.4em;">
+    <div>
+      <div class="card amber">
+        <h3 class="a">Pod spec</h3>
+<pre><code>apiVersion: v1
+kind: Pod
+spec:
+  serviceAccountName: payments-svc
+  containers:
+    - name: app
+      image: acme/payments:1.4
+      volumeMounts:
+        - mountPath: /var/run/secrets/aws
+          name: aws-token
+  volumes:
+    - name: aws-token
+      projected:
+        sources:
+          - serviceAccountToken:
+              audience: sts.amazonaws.com
+              expirationSeconds: 3600
+              path: token</code></pre>
+      </div>
+      <div class="card green" style="margin-top:0.4em;">
+        <h3 class="g">The resulting JWT</h3>
+<pre><code>{
+  "iss": "https://oidc.eks.eu-west-1.amazonaws.com/id/ABC123",
+  "sub": "system:serviceaccount:billing:payments-svc",
+  "aud": "sts.amazonaws.com",
+  "exp": 1800003600,
+  "iat": 1800000000,
+  "kubernetes.io": {
+    "namespace": "billing",
+    "serviceaccount": { "name": "payments-svc", "uid": "…" },
+    "pod":            { "name": "payments-svc-7df4f", "uid": "…" }
+  }
+}</code></pre>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">Discovery — the cluster as an OIDC issuer</h3>
+<pre><code>$ kubectl get --raw /.well-known/openid-configuration
+{ "issuer": "https://oidc.eks.eu-west-1.amazonaws.com/id/ABC123",
+  "jwks_uri": "https://oidc…/keys",
+  "response_types_supported": ["id_token"],
+  "subject_types_supported": ["public"],
+  "id_token_signing_alg_values_supported": ["RS256"] }</code></pre>
+        <p style="margin-top:.25em;">Any external IdP / cloud STS can be configured to trust this issuer — that's how IRSA / WIF / GitHub Actions OIDC all work.</p>
+      </div>
+      <div class="card red" style="margin-top:0.4em;">
+        <h3 class="r">Trust policy hygiene</h3>
+        <ul>
+          <li>Pin <code>sub</code> in the IAM role's trust policy — not just <code>iss</code> + <code>aud</code>.</li>
+          <li>Without a sub-pin, every SA in the cluster can assume the role.</li>
+          <li>For cross-account / cross-cluster, also pin the cluster's OIDC issuer URL exactly.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ SLIDE 15 — MESH + JWT ═══ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">14</span><h2>Service Mesh + JWT — End-User Identity at the Sidecar</h2></div>
+  <p>mTLS gives you <em>workload</em> identity. JWT validation at the sidecar gives you <em>end-user</em> identity. Together you get authz that knows both who is calling and on whose behalf.</p>
+
+  <div class="cols cols-2" style="margin-top:0.4em;">
+    <div>
+      <div class="card amber">
+        <h3 class="a">Istio RequestAuthentication + AuthorizationPolicy</h3>
+<pre><code># 1. Validate JWTs from this issuer
+apiVersion: security.istio.io/v1beta1
+kind: RequestAuthentication
+metadata: { name: jwt-acme, namespace: billing }
+spec:
+  selector: { matchLabels: { app: ledger-svc } }
+  jwtRules:
+    - issuer: "https://login.acme.com/"
+      jwksUri: "https://login.acme.com/.well-known/jwks.json"
+      audiences: ["https://api.acme.com/ledger"]
+
+---
+# 2. Require a valid JWT with the right scope
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata: { name: ledger-write, namespace: billing }
+spec:
+  selector: { matchLabels: { app: ledger-svc } }
+  action: ALLOW
+  rules:
+    - to: [{ operation: { methods: ["POST"], paths: ["/v1/postings"] } }]
+      when:
+        - key: request.auth.claims[scope]
+          values: ["postings:write"]
+        - key: request.auth.claims[iss]
+          values: ["https://login.acme.com/"]</code></pre>
+      </div>
+    </div>
+    <div>
+      <div class="card green">
+        <h3 class="g">Two audiences, two enforcement layers</h3>
+        <ul>
+          <li><span class="a">mTLS</span> (workload-to-workload) — enforces "<em>caller is the payments service in our mesh</em>".</li>
+          <li><span class="a">JWT</span> (user-to-service, propagated through) — enforces "<em>and the user behind that call has consented to write postings</em>".</li>
+          <li>Both must pass. Either alone is incomplete.</li>
+        </ul>
+      </div>
+      <div class="card purple" style="margin-top:0.4em;">
+        <h3 class="p">JWT propagation between services</h3>
+        <ul>
+          <li>Edge gateway validates the user's token, may downscope or exchange it.</li>
+          <li>Internal services accept the same JWT in <code>Authorization</code> or in a custom header.</li>
+          <li>For multi-hop calls preserving end-user identity: <span class="a">Token Exchange (RFC 8693)</span> at the boundary.</li>
+        </ul>
+      </div>
+      <div class="card red" style="margin-top:0.4em;">
+        <h3 class="r">Don't trust the JWT silently</h3>
+        <p>If <code>RequestAuthentication</code> isn't present, Istio doesn't validate the JWT at all — but <code>AuthorizationPolicy</code> may still <em>read claims from it</em>. The result: an attacker forges any JWT they like and your policy reads the unsigned claims. Always pair the two.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ SLIDE 16 — AGENTS / MCP ═══ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">15</span><h2>Workload Identity for AI Agents &amp; MCP Servers</h2></div>
+
+  <div class="cols cols-2">
+    <div>
+      <div class="card amber">
+        <h3 class="a">Why agents make this harder</h3>
+        <ul>
+          <li>An agent calls many MCP servers, often in different trust domains.</li>
+          <li>The agent itself is a workload — it needs an identity.</li>
+          <li>The MCP server's authz often wants to distinguish <em>the human user</em> from <em>the agent acting on their behalf</em>.</li>
+          <li>Tokens flow through more hops than typical SaaS — agent → gateway → MCP server → upstream API.</li>
+        </ul>
+      </div>
+      <div class="card green" style="margin-top:0.4em;">
+        <h3 class="g">A defensible pattern</h3>
+        <ol style="padding-left:1.2em;">
+          <li>Agent runs in a pod with a SPIFFE ID — that identity proves the binary &amp; tenant.</li>
+          <li>Human user authenticates separately via OAuth/OIDC; the agent holds a refresh token.</li>
+          <li>Agent → MCP Gateway over mTLS using SPIFFE; user's access token in <code>Authorization</code>.</li>
+          <li>MCP Gateway validates both: workload identity (mesh) <em>and</em> user identity (JWT validation).</li>
+          <li>Downstream MCP server uses Token Exchange to obtain a token <em>"user U via agent A"</em> for upstream APIs.</li>
+        </ol>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">"Agent identity" is its own claim</h3>
+        <ul>
+          <li>Some emerging conventions: include an <code>agent</code> claim in the access token (or in the act-on-behalf-of structure of a token-exchanged JWT).</li>
+          <li>MCP server can then audit: <em>"action X taken by user U via agent A on date D"</em>.</li>
+          <li>Authorisation policies can demand human-confirmed actions for high-risk operations even when the agent has the right scope.</li>
+        </ul>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">Cross-references</h3>
+        <p>This is where <span class="a">OAuth_for_MCP</span> (OAuth profile) + <span class="a">Advanced_OpenID_Connect</span> (Token Exchange + workload OIDC) + this deck (workload identity + service-mesh enforcement) meet.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ SLIDE 17 — CHOOSING ═══ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">16</span><h2>Choosing a Stack — Mesh vs SPIRE vs Cloud-Native</h2></div>
+
+  <table>
+    <thead><tr><th>You're starting with...</th><th>Best fit</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>One Kubernetes cluster, one cloud, want low-friction mTLS</td>
+        <td><span class="a">Linkerd</span> or <span class="a">Cilium service-mesh mode</span></td>
+        <td>Identity + mTLS work out of the box; no extra system to operate.</td>
+      </tr>
+      <tr>
+        <td>Many K8s clusters, many clouds, polyglot workloads (VM + serverless)</td>
+        <td><span class="a">SPIRE</span> + a thin mesh</td>
+        <td>Vendor-neutral SPIFFE identity travels everywhere; mesh enforces only inside K8s.</td>
+      </tr>
+      <tr>
+        <td>Heavily AWS-centric, EKS + Lambda + EC2</td>
+        <td><span class="a">IRSA</span> + AWS App Mesh / Cloud Map / native VPC controls</td>
+        <td>Cloud-managed; deep IAM integration; no SPIRE to operate.</td>
+      </tr>
+      <tr>
+        <td>Need fine L7 traffic policy (canary, circuit breaking, custom Envoy filters)</td>
+        <td><span class="a">Istio</span></td>
+        <td>The widest L7 surface; can call out to ext_authz for complex rules.</td>
+      </tr>
+      <tr>
+        <td>"We just want pod-to-pod NetworkPolicy with identity"</td>
+        <td><span class="a">Cilium</span></td>
+        <td>eBPF in the kernel; no sidecars; identity-aware NetworkPolicy.</td>
+      </tr>
+      <tr>
+        <td>Compliance needs hardware-rooted attestation</td>
+        <td>SPIRE with TPM / AWS Nitro / Azure Confidential / GCP Shielded VM plugins</td>
+        <td>Workload attestation chain rooted in hardware.</td>
+      </tr>
+      <tr>
+        <td>Multi-org B2B service-to-service (no shared cluster, no shared cloud)</td>
+        <td>SPIRE federation</td>
+        <td>Trust-bundle exchange enables verifiable cross-org calls without VPNs.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="card amber" style="margin-top:0.4em;">
+    <h3 class="a">An honest trade-off</h3>
+    <p>Cloud-native (IRSA / WI / Managed Identity) is the lowest-cost path inside one cloud — but you re-build it each time you add a cloud. SPIRE costs more to operate up front, pays back with portability. Mesh-based identity gets you authz <em>between</em> services for free; less useful for "identity for AWS API calls".</p>
+  </div>
+</section>
+
+
+<!-- ═══ SLIDE 18 — MIGRATION ═══ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">17</span><h2>Migration Patterns</h2></div>
+
+  <div class="cols cols-2">
+    <div>
+      <div class="card amber">
+        <h3 class="a">Static keys → IRSA / WI</h3>
+        <ol style="padding-left:1.2em;">
+          <li>Inventory every long-lived AWS / GCP / Azure key in app code, config, secrets.</li>
+          <li>Create a per-workload IAM role / GCP SA / Entra app with the same permissions.</li>
+          <li>Configure the cluster's OIDC issuer in the cloud's STS (one-off per cluster).</li>
+          <li>Annotate the K8s ServiceAccount and add the projected token volume.</li>
+          <li>Cut over one workload at a time; verify CloudTrail / Audit Logs show the new role.</li>
+          <li>Rotate the static key one last time, verify nothing breaks, then delete it.</li>
+        </ol>
+      </div>
+      <div class="card green" style="margin-top:0.4em;">
+        <h3 class="g">"Pinging is mTLS" → service mesh</h3>
+        <ol style="padding-left:1.2em;">
+          <li>Install the mesh in a single namespace, mode = permissive (mTLS optional, ALLOW unsigned).</li>
+          <li>Enable telemetry — see what's actually talking to what.</li>
+          <li>Add namespace-wide DENY policy in <em>audit</em> mode; review denies for false positives.</li>
+          <li>Move to mTLS=STRICT once telemetry is clean.</li>
+          <li>Move DENY policies to enforcing mode.</li>
+        </ol>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">Single cluster → SPIRE federation</h3>
+        <ol style="padding-left:1.2em;">
+          <li>Stand up one SPIRE Server per trust domain.</li>
+          <li>Issue SVIDs to a small canary set first.</li>
+          <li>Federate trust bundles between trust domains via the SPIFFE Federation API.</li>
+          <li>Verify cross-domain mTLS handshakes succeed.</li>
+          <li>Roll out to remaining workloads behind a feature flag.</li>
+        </ol>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">Lessons from real migrations</h3>
+        <ul>
+          <li>Always start in audit / permissive mode. Enforcement-first migrations cause outages.</li>
+          <li>Telemetry first, policy second. You cannot write a good policy if you don't know what's calling what.</li>
+          <li>Don't migrate <em>and</em> introduce a mesh in the same quarter — pick one source of complexity.</li>
+          <li>The legacy permissive mode often quietly becomes permanent. Build a deadline + dashboard to prevent this.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ SLIDE 19 — GOTCHAS ═══ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">18</span><h2>Production Gotchas</h2></div>
+
+  <div class="cols cols-2">
+    <div>
+      <div class="card red">
+        <h3 class="r">"My mesh policy isn't enforcing"</h3>
+        <p>Most common cause: the workload uses a port the mesh isn't proxying (e.g. headless service, host-network pod). Confirm the proxy is actually in the path.</p>
+      </div>
+      <div class="card red" style="margin-top:0.3em;">
+        <h3 class="r">SVIDs that keep expiring under load</h3>
+        <p>Workload not refreshing the cert before expiry; SPIFFE Workload API call rate-limited or blocked. Re-fetch ahead of expiry (~ 50 % of TTL), with retries.</p>
+      </div>
+      <div class="card red" style="margin-top:0.3em;">
+        <h3 class="r">Trust bundle drift</h3>
+        <p>One cluster has the new CA, another still has the old. Calls fail mTLS validation. Trust Manager / SPIRE bundle endpoint should be polled; verify TTLs aren't too long.</p>
+      </div>
+      <div class="card red" style="margin-top:0.3em;">
+        <h3 class="r">IRSA: "the role is right, but it doesn't work"</h3>
+        <p>Almost always: the SA annotation is wrong, the IAM role's trust policy doesn't pin the right SA, or the cluster's OIDC issuer isn't registered as an STS identity provider. CloudTrail's <code>AssumeRoleWithWebIdentity</code> error is verbose; read it.</p>
+      </div>
+    </div>
+    <div>
+      <div class="card red">
+        <h3 class="r">Linkerd / Istio JWT skew</h3>
+        <p>Sidecar's view of "now" diverges from the IdP's; tokens look expired or not-yet-valid. NTP everywhere, leeway ≤ 60 s.</p>
+      </div>
+      <div class="card red" style="margin-top:0.3em;">
+        <h3 class="r">"Mesh is up but my pod can't reach the internet"</h3>
+        <p>mTLS strict mode + outbound to a non-mesh endpoint = handshake failure. Configure egress policy explicitly; don't rely on default-allow.</p>
+      </div>
+      <div class="card red" style="margin-top:0.3em;">
+        <h3 class="r">Cilium L7 policies on TLS-encrypted traffic</h3>
+        <p>You can't inspect HTTP that you can't decrypt. Either terminate TLS at the proxy (mesh-mTLS handles this) or accept L4-only enforcement on opaque traffic.</p>
+      </div>
+      <div class="card red" style="margin-top:0.3em;">
+        <h3 class="r">Forgotten attestation selectors</h3>
+        <p>Loose SPIRE selectors → wrong identity issued to the wrong pod. Tight selectors → pod won't get an identity after a routine deploy. Pin namespace + SA + image registry; iterate when you change those.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ SLIDE 20 — SUMMARY ═══ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr"><span class="tag">19</span><h2>Summary &amp; References</h2></div>
+  <div class="cols cols-2">
+    <div>
+      <div class="card amber">
+        <h3 class="a">What we covered</h3>
+        <ul>
+          <li>Workload identity as a problem — why user-AuthN doesn't translate</li>
+          <li>SPIFFE specification — IDs, SVIDs (X.509 + JWT), federation</li>
+          <li>SPIRE — server / agent, attestation, registration entries</li>
+          <li>Service mesh AuthZ — what the sidecar gives you</li>
+          <li>Istio AuthorizationPolicy patterns and pitfalls</li>
+          <li>Linkerd's three-CRD model</li>
+          <li>Cilium L4/L7 + Tetragon for runtime enforcement</li>
+          <li>mTLS at scale — issuance, rotation, observability, root rotation</li>
+          <li>Cloud-native workload identity (IRSA / WI / Managed Identity / WIF)</li>
+          <li>K8s ServiceAccountTokenVolumeProjection — the substrate</li>
+          <li>Service mesh + JWT for end-user identity at L7</li>
+          <li>Workload identity for AI agents &amp; MCP servers</li>
+          <li>Choosing a stack &middot; migration &middot; production gotchas</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card green">
+        <h3 class="g">Three take-aways</h3>
+        <ol style="padding-left:1.2em;">
+          <li><span class="a">Identity comes from the substrate.</span> The workload doesn't carry a secret; the platform attests what it is.</li>
+          <li><span class="a">mTLS is the easy part; rotation is the hard part.</span> If you can't rotate the CA root with one Slack message, you're not done.</li>
+          <li><span class="a">Workload identity + end-user identity must both be enforced.</span> mTLS alone says "this binary"; JWT alone says "this user". Real authz needs both.</li>
+        </ol>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">Companion decks</h3>
+        <p><span class="a">Authorization Models</span> — RBAC/ABAC/ReBAC/PaC foundations. <span class="a">Edge &amp; Gateway AuthZ</span> — north-south enforcement. <span class="a">OAuth for MCP Servers</span> &middot; <span class="a">Advanced OpenID Connect</span> &middot; <span class="a">Cloud_aaS_05_Cloud_Security</span> — the wider context this deck refers back to.</p>
+      </div>
+      <div class="card purple" style="margin-top:0.4em;">
+        <h3 class="p">References</h3>
+        <p>SPIFFE specification &middot; SPIRE — spiffe.io &middot; <em>"Solving the Bottom Turtle"</em> (SPIFFE/SPIRE book) &middot; Istio Security &middot; Linkerd Authorization Policy docs &middot; Cilium Network Policies &middot; cert-manager &middot; AWS IRSA / EKS Pod Identity &middot; GCP Workload Identity / WIF &middot; Azure Workload Identity &middot; NIST SP 800-204A (Service Mesh) &middot; CNCF TAG-Security: Workload Identity</p>
+      </div>
+      <div class="card red" style="margin-top:0.4em;">
+        <h3 class="r">One-line takeaway</h3>
+        <p>Replace every long-lived service credential with a short-lived, attested, automatically-rotated identity. The platforms exist; the only thing left is to wire them up.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/plugin/highlight/highlight.min.js"></script>
+<script>
+Reveal.initialize({
+  hash: true, slideNumber: 'c/t', transition: 'fade', transitionSpeed: 'fast',
+  controls: true, progress: true, center: false, width: 1100, height: 900, margin: 0.01,
+  plugins: [RevealHighlight], highlight: { theme: 'monokai' }
+});
+</script>
+<script>
+(function(){
+  var h = Reveal.getConfig().height || 900;
+  var m = Reveal.getConfig().margin || 0.02;
+  var maxH = Math.floor(h * (1 - 2 * m)) + 'px';
+  function fixSlides(){
+    document.querySelectorAll('.reveal .slides>section,.reveal .slides>section>section').forEach(function(s){
+      s.style.display = 'block'; s.style.maxHeight = maxH;
+    });
+  }
+  Reveal.on('ready', fixSlides);
+  Reveal.on('slidechanged', fixSlides);
+})();
+</script>
+</body>
+</html>
