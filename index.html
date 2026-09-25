@@ -6,7 +6,7 @@
 <title>Workload Identity &amp; Service-Mesh AuthZ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus:wght@400&family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,700&family=Spline+Sans+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/black.min.css">
 <style>
@@ -14,20 +14,20 @@
           --bg:#0f231c; --bg2:#132a22; --bg3:#173028; --border:#29483d; --text:#ede8d8; --muted:#829b90; }
   .reveal-viewport { background: var(--bg); }
   .reveal .slides section { background: transparent; }
-  .reveal { font-family: 'DM Sans', sans-serif; color: var(--text); }
-  .reveal h1, .reveal h2, .reveal h3 { font-family: 'Playfair Display', serif; font-weight: 700; }
+  .reveal { font-family: 'Hanken Grotesk', sans-serif; color: var(--text); }
+  .reveal h1, .reveal h2, .reveal h3 { font-family: 'Marcellus', serif; font-weight: 700; }
   .reveal h1 { font-size: 1.6em; color: var(--amber); line-height: 1.1; }
   .reveal h2 { font-size: 1.1em; color: var(--amber); margin-bottom: .2em; }
   .reveal h3 { font-size: .78em; color: var(--green); margin-bottom: .15em; }
   .reveal p  { font-size: .56em; line-height: 1.45; color: var(--text); }
   .reveal li { font-size: .54em; line-height: 1.45; margin-bottom: .1em; }
-  .reveal code { font-family: 'JetBrains Mono', monospace; font-size: .72em; }
+  .reveal code { font-family: 'Spline Sans Mono', monospace; font-size: .72em; }
   .reveal pre  { box-shadow: none; background: var(--bg3); border: 1px solid var(--border);
                  border-radius: 6px; padding: .3em .5em; margin: .25em 0; }
   .reveal pre code { font-size: .52em; line-height: 1.35; background: transparent; color: #d9dcce; }
   .slide-hdr { display:flex; align-items:center; gap:.4em; border-bottom:1px solid var(--border);
                padding-bottom:.2em; margin-bottom:.3em; }
-  .slide-hdr .tag { font-family:'JetBrains Mono',monospace; font-size:.42em; font-weight:500;
+  .slide-hdr .tag { font-family:'Spline Sans Mono',monospace; font-size:.42em; font-weight:500;
                     color:var(--bg); background:var(--amber); padding:.1em .4em; border-radius:3px; letter-spacing:.04em; }
   .slide-hdr h2 { margin:0; font-size:.95em; }
   .cols { display:grid; gap:.5em; }
@@ -51,16 +51,16 @@
   .reveal table tr:nth-child(even) td { background:#122820; }
   .a{color:var(--amber);font-weight:600;} .g{color:var(--green);font-weight:600;}
   .p{color:var(--purple);font-weight:600;} .b{color:var(--blue);font-weight:600;}
-  .r{color:var(--red);font-weight:600;} .mono{font-family:'JetBrains Mono',monospace;}
+  .r{color:var(--red);font-weight:600;} .mono{font-family:'Spline Sans Mono',monospace;}
   svg.diagram { display:block; margin:0 auto; overflow:visible; }
-  .pill { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:.44em; padding:.08em .4em; border-radius:99px; border:1px solid; margin:0 .08em; }
+  .pill { display:inline-block; font-family:'Spline Sans Mono',monospace; font-size:.44em; padding:.08em .4em; border-radius:99px; border:1px solid; margin:0 .08em; }
   .pill.amber{color:var(--amber); border-color:var(--amber);} .pill.green{color:var(--green); border-color:var(--green);}
   .pill.purple{color:var(--purple); border-color:var(--purple);} .pill.blue{color:var(--blue); border-color:var(--blue);}
   .reveal .slide-footer{display:none;}
   .title-slide h1{font-size:1.8em;}
-  .title-slide .subtitle{font-size:.7em; color:var(--green); font-family:'DM Sans',sans-serif; font-weight:300; letter-spacing:.04em; margin:.3em 0 .6em;}
-  .title-slide .meta{font-size:.48em; color:var(--muted); font-family:'JetBrains Mono',monospace;}
-  .ss-row{display:flex; gap:.25em; align-items:center; margin:.1em 0; font-size:.55em; font-family:'JetBrains Mono',monospace;}
+  .title-slide .subtitle{font-size:.7em; color:var(--green); font-family:'Hanken Grotesk',sans-serif; font-weight:300; letter-spacing:.04em; margin:.3em 0 .6em;}
+  .title-slide .meta{font-size:.48em; color:var(--muted); font-family:'Spline Sans Mono',monospace;}
+  .ss-row{display:flex; gap:.25em; align-items:center; margin:.1em 0; font-size:.55em; font-family:'Spline Sans Mono',monospace;}
   .ss-node{padding:.2em .55em; border-radius:5px; font-size:.9em; background:var(--bg3); border:1px solid var(--border); color:var(--text);}
   .ss-node.active{background:#2f3e35; border-color:var(--green); color:var(--green);}
   .ss-node.done{background:#19342a; border-color:var(--purple); color:var(--purple);}
@@ -68,6 +68,7 @@
   .reveal ul, .reveal ol { margin:.15em 0 .15em 1em; }
   .reveal .slides > section { display:flex !important; flex-direction:column !important; overflow-y:auto !important; align-items:stretch !important; justify-content:flex-start !important; }
 </style>
+<style>:root{font-synthesis-weight:none}</style>
 </head>
 <body>
 <div class="reveal">
@@ -77,7 +78,7 @@
 <!-- ═══ SLIDE 01 — TITLE ═══ -->
 <section class="title-slide" data-background-color="#0f231c">
   <div style="text-align:left; max-width:820px; margin:0 auto; padding:1em 0;">
-    <div style="font-family:'JetBrains Mono',monospace; font-size:.5em; color:var(--muted); margin-bottom:.4em; letter-spacing:.1em;">
+    <div style="font-family:'Spline Sans Mono',monospace; font-size:.5em; color:var(--muted); margin-bottom:.4em; letter-spacing:.1em;">
       TECHNICAL PRESENTATION
     </div>
     <h1>Workload Identity<br>&amp; Service-Mesh AuthZ</h1>
@@ -269,37 +270,37 @@
 
   <svg class="diagram" viewBox="0 0 940 320" width="900" height="320">
     <rect x="20"  y="20" width="180" height="50" rx="8" fill="#19342a" stroke="#b2a3d0" stroke-width="1.5"/>
-    <text x="110" y="42" text-anchor="middle" fill="#b2a3d0" font-family="Playfair Display,serif" font-size="14" font-weight="700">SPIRE Server</text>
-    <text x="110" y="60" text-anchor="middle" fill="#ccd5c7" font-family="JetBrains Mono,monospace" font-size="9">central · holds CA &amp; policies</text>
+    <text x="110" y="42" text-anchor="middle" fill="#b2a3d0" font-family="Marcellus,serif" font-size="14" font-weight="700">SPIRE Server</text>
+    <text x="110" y="60" text-anchor="middle" fill="#ccd5c7" font-family="Spline Sans Mono,monospace" font-size="9">central · holds CA &amp; policies</text>
 
     <rect x="20"  y="120" width="180" height="50" rx="8" fill="#19342a" stroke="#93b6cd" stroke-width="1.5"/>
-    <text x="110" y="142" text-anchor="middle" fill="#93b6cd" font-family="Playfair Display,serif" font-size="14" font-weight="700">SPIRE Agent</text>
-    <text x="110" y="160" text-anchor="middle" fill="#ccd5c7" font-family="JetBrains Mono,monospace" font-size="9">one per node</text>
+    <text x="110" y="142" text-anchor="middle" fill="#93b6cd" font-family="Marcellus,serif" font-size="14" font-weight="700">SPIRE Agent</text>
+    <text x="110" y="160" text-anchor="middle" fill="#ccd5c7" font-family="Spline Sans Mono,monospace" font-size="9">one per node</text>
 
     <rect x="20"  y="220" width="180" height="50" rx="8" fill="#19342a" stroke="#8fc9a1" stroke-width="1.5"/>
-    <text x="110" y="242" text-anchor="middle" fill="#8fc9a1" font-family="Playfair Display,serif" font-size="14" font-weight="700">Workload</text>
-    <text x="110" y="260" text-anchor="middle" fill="#ccd5c7" font-family="JetBrains Mono,monospace" font-size="9">Pod / Lambda / VM process</text>
+    <text x="110" y="242" text-anchor="middle" fill="#8fc9a1" font-family="Marcellus,serif" font-size="14" font-weight="700">Workload</text>
+    <text x="110" y="260" text-anchor="middle" fill="#ccd5c7" font-family="Spline Sans Mono,monospace" font-size="9">Pod / Lambda / VM process</text>
 
     <line x1="110" y1="170" x2="110" y2="220" stroke="#7c968b" stroke-width="1.2"/>
-    <text x="120" y="200" fill="#7c968b" font-family="JetBrains Mono,monospace" font-size="9">Workload API (UDS)</text>
+    <text x="120" y="200" fill="#7c968b" font-family="Spline Sans Mono,monospace" font-size="9">Workload API (UDS)</text>
 
     <line x1="110" y1="70" x2="110" y2="120" stroke="#7c968b" stroke-width="1.2"/>
-    <text x="120" y="100" fill="#7c968b" font-family="JetBrains Mono,monospace" font-size="9">node attestation</text>
+    <text x="120" y="100" fill="#7c968b" font-family="Spline Sans Mono,monospace" font-size="9">node attestation</text>
 
     <rect x="320" y="60" width="600" height="50" rx="6" fill="#19342a" stroke="#cfad64"/>
-    <text x="620" y="82" text-anchor="middle" fill="#cfad64" font-family="JetBrains Mono,monospace" font-size="10">1. Agent attests itself to Server (k8s_psat / aws_iid / azure_msi / sshpop / x509pop)</text>
-    <text x="620" y="98" text-anchor="middle" fill="#7c968b" font-family="JetBrains Mono,monospace" font-size="9">→ Agent is now trusted by the Server, gets a node-level identity</text>
+    <text x="620" y="82" text-anchor="middle" fill="#cfad64" font-family="Spline Sans Mono,monospace" font-size="10">1. Agent attests itself to Server (k8s_psat / aws_iid / azure_msi / sshpop / x509pop)</text>
+    <text x="620" y="98" text-anchor="middle" fill="#7c968b" font-family="Spline Sans Mono,monospace" font-size="9">→ Agent is now trusted by the Server, gets a node-level identity</text>
 
     <rect x="320" y="135" width="600" height="50" rx="6" fill="#19342a" stroke="#cfad64"/>
-    <text x="620" y="157" text-anchor="middle" fill="#cfad64" font-family="JetBrains Mono,monospace" font-size="10">2. Workload connects to local Agent over Unix Domain Socket</text>
-    <text x="620" y="173" text-anchor="middle" fill="#7c968b" font-family="JetBrains Mono,monospace" font-size="9">→ Agent inspects PID, k8s namespace+SA, container image hash, etc. (workload attestation)</text>
+    <text x="620" y="157" text-anchor="middle" fill="#cfad64" font-family="Spline Sans Mono,monospace" font-size="10">2. Workload connects to local Agent over Unix Domain Socket</text>
+    <text x="620" y="173" text-anchor="middle" fill="#7c968b" font-family="Spline Sans Mono,monospace" font-size="9">→ Agent inspects PID, k8s namespace+SA, container image hash, etc. (workload attestation)</text>
 
     <rect x="320" y="210" width="600" height="50" rx="6" fill="#19342a" stroke="#cfad64"/>
-    <text x="620" y="232" text-anchor="middle" fill="#cfad64" font-family="JetBrains Mono,monospace" font-size="10">3. Agent matches selectors to a registration entry, asks Server for an SVID</text>
-    <text x="620" y="248" text-anchor="middle" fill="#7c968b" font-family="JetBrains Mono,monospace" font-size="9">→ Server signs SVID with the trust-domain CA, returns to Agent</text>
+    <text x="620" y="232" text-anchor="middle" fill="#cfad64" font-family="Spline Sans Mono,monospace" font-size="10">3. Agent matches selectors to a registration entry, asks Server for an SVID</text>
+    <text x="620" y="248" text-anchor="middle" fill="#7c968b" font-family="Spline Sans Mono,monospace" font-size="9">→ Server signs SVID with the trust-domain CA, returns to Agent</text>
 
     <rect x="320" y="280" width="600" height="35" rx="6" fill="#19342a" stroke="#8fc9a1"/>
-    <text x="620" y="302" text-anchor="middle" fill="#8fc9a1" font-family="JetBrains Mono,monospace" font-size="10">4. Agent hands the SVID to the workload (and rotates it before expiry)</text>
+    <text x="620" y="302" text-anchor="middle" fill="#8fc9a1" font-family="Spline Sans Mono,monospace" font-size="10">4. Agent hands the SVID to the workload (and rotates it before expiry)</text>
   </svg>
 
   <div class="card amber" style="margin-top:0.2em;">
@@ -420,27 +421,27 @@ GET /federation/spiffe/v1/bundle
 
   <svg class="diagram" viewBox="0 0 940 240" width="900" height="240">
     <rect x="20"  y="60" width="220" height="120" rx="8" fill="#132a22" stroke="#93b6cd" stroke-width="2"/>
-    <text x="130" y="84" text-anchor="middle" fill="#93b6cd" font-family="Playfair Display,serif" font-size="14" font-weight="700">Pod A</text>
+    <text x="130" y="84" text-anchor="middle" fill="#93b6cd" font-family="Marcellus,serif" font-size="14" font-weight="700">Pod A</text>
     <rect x="40"  y="100" width="80" height="30" rx="4" fill="#19342a" stroke="#8fc9a1"/>
-    <text x="80"  y="120" text-anchor="middle" fill="#8fc9a1" font-family="JetBrains Mono,monospace" font-size="10">app</text>
+    <text x="80"  y="120" text-anchor="middle" fill="#8fc9a1" font-family="Spline Sans Mono,monospace" font-size="10">app</text>
     <rect x="140" y="100" width="80" height="30" rx="4" fill="#19342a" stroke="#b2a3d0"/>
-    <text x="180" y="120" text-anchor="middle" fill="#b2a3d0" font-family="JetBrains Mono,monospace" font-size="10">sidecar</text>
+    <text x="180" y="120" text-anchor="middle" fill="#b2a3d0" font-family="Spline Sans Mono,monospace" font-size="10">sidecar</text>
     <line x1="120" y1="115" x2="140" y2="115" stroke="#7c968b"/>
-    <text x="130" y="160" text-anchor="middle" fill="#7c968b" font-family="JetBrains Mono,monospace" font-size="9">localhost</text>
+    <text x="130" y="160" text-anchor="middle" fill="#7c968b" font-family="Spline Sans Mono,monospace" font-size="9">localhost</text>
 
     <rect x="700" y="60" width="220" height="120" rx="8" fill="#132a22" stroke="#93b6cd" stroke-width="2"/>
-    <text x="810" y="84" text-anchor="middle" fill="#93b6cd" font-family="Playfair Display,serif" font-size="14" font-weight="700">Pod B</text>
+    <text x="810" y="84" text-anchor="middle" fill="#93b6cd" font-family="Marcellus,serif" font-size="14" font-weight="700">Pod B</text>
     <rect x="720" y="100" width="80" height="30" rx="4" fill="#19342a" stroke="#b2a3d0"/>
-    <text x="760" y="120" text-anchor="middle" fill="#b2a3d0" font-family="JetBrains Mono,monospace" font-size="10">sidecar</text>
+    <text x="760" y="120" text-anchor="middle" fill="#b2a3d0" font-family="Spline Sans Mono,monospace" font-size="10">sidecar</text>
     <rect x="820" y="100" width="80" height="30" rx="4" fill="#19342a" stroke="#8fc9a1"/>
-    <text x="860" y="120" text-anchor="middle" fill="#8fc9a1" font-family="JetBrains Mono,monospace" font-size="10">app</text>
+    <text x="860" y="120" text-anchor="middle" fill="#8fc9a1" font-family="Spline Sans Mono,monospace" font-size="10">app</text>
     <line x1="800" y1="115" x2="820" y2="115" stroke="#7c968b"/>
 
     <line x1="220" y1="115" x2="720" y2="115" stroke="#cfad64" stroke-width="2" marker-end="url(#mesh-arr)"/>
-    <text x="470" y="105" text-anchor="middle" fill="#cfad64" font-family="JetBrains Mono,monospace" font-size="11" font-weight="600">mTLS — SPIFFE-ID-bearing certs both ways</text>
-    <text x="470" y="135" text-anchor="middle" fill="#7c968b" font-family="JetBrains Mono,monospace" font-size="9">policy decision: AuthorizationPolicy / NetworkPolicy / EndpointPolicy</text>
+    <text x="470" y="105" text-anchor="middle" fill="#cfad64" font-family="Spline Sans Mono,monospace" font-size="11" font-weight="600">mTLS — SPIFFE-ID-bearing certs both ways</text>
+    <text x="470" y="135" text-anchor="middle" fill="#7c968b" font-family="Spline Sans Mono,monospace" font-size="9">policy decision: AuthorizationPolicy / NetworkPolicy / EndpointPolicy</text>
 
-    <text x="465" y="220" text-anchor="middle" fill="#7c968b" font-family="DM Sans,sans-serif" font-size="11">App code sees plain HTTP to localhost. Sidecar handles identity + crypto + policy. <em>App code didn't change.</em></text>
+    <text x="465" y="220" text-anchor="middle" fill="#7c968b" font-family="Hanken Grotesk,sans-serif" font-size="11">App code sees plain HTTP to localhost. Sidecar handles identity + crypto + policy. <em>App code didn't change.</em></text>
 
     <defs><marker id="mesh-arr" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto"><path d="M0,0 L9,3.5 L0,7" fill="#cfad64"/></marker></defs>
   </svg>
