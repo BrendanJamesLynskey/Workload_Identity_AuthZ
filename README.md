@@ -57,7 +57,7 @@ This deck assumes the OAuth/OIDC foundations from the Identity & Access series; 
 
 ## Technology
 
-[Reveal.js 4.6](https://revealjs.com) · [highlight.js](https://highlightjs.org) · Playfair Display + DM Sans + JetBrains Mono · inline SVG diagrams.
+[Reveal.js 4.6](https://revealjs.com) · [highlight.js](https://highlightjs.org) · Marcellus + Hanken Grotesk + Spline Sans Mono · inline SVG diagrams.
 
 Single self-contained `index.html` — no build step, no npm, no dependencies to install.
 
